@@ -33,7 +33,7 @@ namespace TranslationManagement.Api.Controllers
             internal static readonly string Completed = "Completed";
         }
 
-        private AppDbContext _context;
+        private AppDbContext _context;                                          // everywhere we create new one, change tomorrow to dependency injection from one place
         private readonly ILogger<TranslatorManagementController> _logger;
 
         public TranslationJobController(IServiceScopeFactory scopeFactory, ILogger<TranslatorManagementController> logger)
@@ -43,9 +43,10 @@ namespace TranslationManagement.Api.Controllers
         }
 
         [HttpGet]
-        public TranslationJob[] GetJobs()
+        public IActionResult GetJobs()
         {
-            return _context.TranslationJobs.ToArray();
+            var jobs = _context.TranslationJobs.ToArray();
+            return Ok(jobs);
         }
 
         const double PricePerCharacter = 0.01;
@@ -55,44 +56,61 @@ namespace TranslationManagement.Api.Controllers
         }
 
         [HttpPost]
-        public bool CreateJob(TranslationJob job)
+        public IActionResult CreateJob(TranslationJob job)
         {
-            job.Status = "New";
+            //job.Status = "New";         why not use existing value
+            job.Status = JobStatuses.New;
+
             SetPrice(job);
             _context.TranslationJobs.Add(job);
+
             bool success = _context.SaveChanges() > 0;
             if (success)
             {
-                var notificationSvc = new UnreliableNotificationService();
-                while (!notificationSvc.SendNotification("Job created: " + job.Id).Result)
+                var notificationSvc = new UnreliableNotificationService();      // this will throw exception sometimes, handle it properly
+
+                bool response = false;
+                do
                 {
-                }
+                    try
+                    {
+                        response = notificationSvc.SendNotification("Job created: " + job.Id).Result;
+                    }
+                    catch (Exception ex)
+                    {
+                        continue;
+                    }
+                    
+                } while (!response);            // probably better exception handling
 
                 _logger.LogInformation("New job notification sent");
             }
 
-            return success;
+            return CreatedAtAction(nameof(GetJobs), new { id = job.Id }, job);
         }
 
+
         [HttpPost]
-        public bool CreateJobWithFile(IFormFile file, string customer)
+        public IActionResult CreateJobWithFile(IFormFile file, string customer)
         {
-            var reader = new StreamReader(file.OpenReadStream());
+            //var reader = new StreamReader(file.OpenReadStream());       // better create newstreamreader for deadlocks
             string content;
 
             if (file.FileName.EndsWith(".txt"))
             {
-                content = reader.ReadToEnd();
+                content = new StreamReader(file.OpenReadStream()).ReadToEnd();
             }
             else if (file.FileName.EndsWith(".xml"))
             {
-                var xdoc = XDocument.Parse(reader.ReadToEnd());
+                //var xdoc = XDocument.Parse(reader.ReadToEnd());
+                var xdoc = XDocument.Load(file.OpenReadStream());
+
                 content = xdoc.Root.Element("Content").Value;
                 customer = xdoc.Root.Element("Customer").Value.Trim();
             }
             else
             {
-                throw new NotSupportedException("unsupported file");
+                return BadRequest("Unsupported file");  // return action result code, uppercase sentence...
             }
 
             var newJob = new TranslationJob()
@@ -108,26 +126,33 @@ namespace TranslationManagement.Api.Controllers
         }
 
         [HttpPost]
-        public string UpdateJobStatus(int jobId, int translatorId, string newStatus = "")
+        public IActionResult UpdateJobStatus(int jobId, int translatorId, string newStatus = "")
         {
-            _logger.LogInformation("Job status update request received: " + newStatus + " for job " + jobId.ToString() + " by translator " + translatorId);
+            _logger.LogInformation("Job status update request received: " + newStatus + " for job " + jobId.ToString() + " by translator " + translatorId);         // a lot of concating
+                
             if (typeof(JobStatuses).GetProperties().Count(prop => prop.Name == newStatus) == 0)
             {
-                return "invalid status";
+                return BadRequest("Invalid status");
             }
 
-            var job = _context.TranslationJobs.Single(j => j.Id == jobId);
+            var job = _context.TranslationJobs.SingleOrDefault(j => j.Id == jobId);
+
+            if (job == null)            // add also check if it is null 
+            {
+                return NotFound();
+            }
 
             bool isInvalidStatusChange = (job.Status == JobStatuses.New && newStatus == JobStatuses.Completed) ||
                                          job.Status == JobStatuses.Completed || newStatus == JobStatuses.New;
             if (isInvalidStatusChange)
             {
-                return "invalid status change";
+                return BadRequest("Invalid status change");
             }
 
             job.Status = newStatus;
             _context.SaveChanges();
-            return "updated";
+
+            return Ok("Updated");
         }
     }
 }

@@ -31,38 +31,66 @@ namespace TranslationManagement.Api.Controlers
         }
 
         [HttpGet]
-        public TranslatorModel[] GetTranslators()
+        public IActionResult GetTranslators()
         {
-            return _context.Translators.ToArray();
+            var translators = _context.Translators.ToArray();
+            return Ok(translators);
         }
 
         [HttpGet]
-        public TranslatorModel[] GetTranslatorsByName(string name)
+        public IActionResult GetTranslatorsByName(string name)
         {
-            return _context.Translators.Where(t => t.Name == name).ToArray();
+            var translators = _context.Translators.Where(t => t.Name == name).ToArray();
+            return Ok(translators);
         }
 
+
         [HttpPost]
-        public bool AddTranslator(TranslatorModel translator)
+        public IActionResult AddTranslator([FromBody] TranslatorModel translator)       // change parameter to be taken from body
         {
-            _context.Translators.Add(translator);
-            return _context.SaveChanges() > 0;
-        }
-        
-        [HttpPost]
-        public string UpdateTranslatorStatus(int Translator, string newStatus = "")
-        {
-            _logger.LogInformation("User status update request: " + newStatus + " for user " + Translator.ToString());
-            if (TranslatorStatuses.Where(status => status == newStatus).Count() == 0)
+            if (!ModelState.IsValid)
             {
-                throw new ArgumentException("unknown status");
+                return BadRequest(ModelState);
             }
 
-            var job = _context.Translators.Single(j => j.Id == Translator);
-            job.Status = newStatus;
+            _context.Translators.Add(translator);
+
+            if (_context.SaveChanges() > 0)         // save here
+                return CreatedAtAction(nameof(GetTranslators), new { id = translator.Id }, translator);
+            else
+                return StatusCode(500, "Translator not added due to server error");
+        }
+
+        [HttpPost]
+        public IActionResult UpdateTranslatorStatus(int translatorId, string newStatus = "")
+        {
+            _logger.LogInformation("User status update request: " + newStatus + " for user id " + translatorId.ToString()); // would simplify, but should not touch logging
+
+            //if (TranslatorStatuses.Where(status => status == newStatus).Count() == 0)
+            //{
+            //    throw new ArgumentException("unknown status");
+            //}
+
+            if (TranslatorStatuses.All(status => status != newStatus))
+            {
+                return BadRequest("Unknown status");
+            }
+
+            //var job = _context.Translators.Single(j => j.Id == Translator);        ????? why job in translators
+            //job.Status = newStatus;
+            //_context.SaveChanges();
+
+            var translator = _context.Translators.SingleOrDefault(t => t.Id == translatorId);
+
+            if (translator == null)
+            {
+                return NotFound();
+            }
+
+            translator.Status = newStatus;
             _context.SaveChanges();
 
-            return "updated";
+            return Ok("Updated");
         }
     }
 }
