@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TranslationManagement.Api.Controlers;
 using TranslationManagement.Api.Controllers;
 
 namespace TranslationManagement.Api

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
+using TranslationManagement.Api.Controllers;
 
 namespace TranslationManagement.Api
 {
@@ -26,6 +27,10 @@ namespace TranslationManagement.Api
 
             services.AddDbContext<AppDbContext>(options => 
                 options.UseSqlite("Data Source=TranslationAppDatabase.db"));
+
+            // Add dependency injections 
+            services.AddScoped<TranslationJobController>();
+            services.AddScoped<TranslatorManagementController>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

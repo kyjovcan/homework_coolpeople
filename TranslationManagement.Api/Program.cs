@@ -12,9 +12,17 @@ namespace TranslationManagement.Api
             var host = CreateHostBuilder(args).Build();
 
             // automatic startup database migration
-            var scope = host.Services.GetService<IServiceScopeFactory>().CreateScope();
-            scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+            //var scope = host.Services.GetService<IServiceScopeFactory>().CreateScope();
+            //scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
 
+            // "using" will dispose our objects properly after using, also use dependency injections 
+            using (var scope = host.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                var dbContext = services.GetRequiredService<AppDbContext>();
+
+                dbContext.Database.Migrate();
+            }
             host.Run();
         }
 

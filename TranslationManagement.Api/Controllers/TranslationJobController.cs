@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using TranslationManagement.Api.Controlers;
+using TranslationManagement.Api.Controllers;
 
 namespace TranslationManagement.Api.Controllers
 {
@@ -33,12 +33,12 @@ namespace TranslationManagement.Api.Controllers
             internal static readonly string Completed = "Completed";
         }
 
-        private AppDbContext _context;                                          // everywhere we create new one, change tomorrow to dependency injection from one place
-        private readonly ILogger<TranslatorManagementController> _logger;
+        private readonly AppDbContext _context;
+        private readonly ILogger<TranslationJobController> _logger;
 
-        public TranslationJobController(IServiceScopeFactory scopeFactory, ILogger<TranslatorManagementController> logger)
+        public TranslationJobController(AppDbContext context, ILogger<TranslationJobController> logger)
         {
-            _context = scopeFactory.CreateScope().ServiceProvider.GetService<AppDbContext>();
+            _context = context;
             _logger = logger;
         }
 

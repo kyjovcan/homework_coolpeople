@@ -4,13 +4,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace TranslationManagement.Api.Controlers
+namespace TranslationManagement.Api.Controllers          // namespace mismatch!!
 {
     [ApiController]
     [Route("api/TranslatorsManagement/[action]")]
     public class TranslatorManagementController : ControllerBase
     {
-        public class TranslatorModel
+        public class TranslatorModel        // move to models
         {
             public int Id { get; set; }
             public string Name { get; set; }
@@ -21,12 +21,13 @@ namespace TranslationManagement.Api.Controlers
 
         public static readonly string[] TranslatorStatuses = { "Applicant", "Certified", "Deleted" };
 
+        private readonly AppDbContext _context; // i prefer shorter ones first
         private readonly ILogger<TranslatorManagementController> _logger;
-        private AppDbContext _context;
 
-        public TranslatorManagementController(IServiceScopeFactory scopeFactory, ILogger<TranslatorManagementController> logger)
+
+        public TranslatorManagementController(AppDbContext context, ILogger<TranslatorManagementController> logger)
         {
-            _context = scopeFactory.CreateScope().ServiceProvider.GetService<AppDbContext>();
+            _context = context;
             _logger = logger;
         }
 
