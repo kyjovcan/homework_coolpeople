@@ -3,26 +3,17 @@ using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using TranslationManagement.Api.Models;
 
-namespace TranslationManagement.Api.Controllers          // namespace mismatch!!
+namespace TranslationManagement.Api.Controllers                         // namespace mismatch!!
 {
     [ApiController]
-    [Route("api/TranslatorsManagement/[action]")]
+    [Route("api/translators")]
     public class TranslatorManagementController : ControllerBase
     {
-        public class TranslatorModel        // move to models
-        {
-            public int Id { get; set; }
-            public string Name { get; set; }
-            public string HourlyRate { get; set; }
-            public string Status { get; set; }
-            public string CreditCardNumber { get; set; }
-        }
-
-        public static readonly string[] TranslatorStatuses = { "Applicant", "Certified", "Deleted" };
-
-        private readonly AppDbContext _context; // i prefer shorter ones first
+        private readonly AppDbContext _context;                         // i prefer shorter ones first
         private readonly ILogger<TranslatorManagementController> _logger;
+        public static readonly string[] TranslatorStatuses = { "Applicant", "Certified", "Deleted" };
 
 
         public TranslatorManagementController(AppDbContext context, ILogger<TranslatorManagementController> logger)
@@ -31,14 +22,14 @@ namespace TranslationManagement.Api.Controllers          // namespace mismatch!!
             _logger = logger;
         }
 
-        [HttpGet]
+        [HttpGet("GetTranslators")]
         public IActionResult GetTranslators()
         {
             var translators = _context.Translators.ToArray();
             return Ok(translators);
         }
 
-        [HttpGet]
+        [HttpGet("GetTranslatorsByName")]
         public IActionResult GetTranslatorsByName(string name)
         {
             var translators = _context.Translators.Where(t => t.Name == name).ToArray();
@@ -46,8 +37,8 @@ namespace TranslationManagement.Api.Controllers          // namespace mismatch!!
         }
 
 
-        [HttpPost]
-        public IActionResult AddTranslator([FromBody] TranslatorModel translator)       // change parameter to be taken from body
+        [HttpPost("AddTranslator")]
+        public IActionResult AddTranslator([FromBody] TranslatorModel translator)       // change parameter to be taken from body for validation
         {
             if (!ModelState.IsValid)
             {
@@ -62,15 +53,10 @@ namespace TranslationManagement.Api.Controllers          // namespace mismatch!!
                 return StatusCode(500, "Translator not added due to server error");
         }
 
-        [HttpPost]
+        [HttpPost("UpdateTranslatorStatus")]
         public IActionResult UpdateTranslatorStatus(int translatorId, string newStatus = "")
         {
             _logger.LogInformation("User status update request: " + newStatus + " for user id " + translatorId.ToString()); // would simplify, but should not touch logging
-
-            //if (TranslatorStatuses.Where(status => status == newStatus).Count() == 0)
-            //{
-            //    throw new ArgumentException("unknown status");
-            //}
 
             if (TranslatorStatuses.All(status => status != newStatus))
             {

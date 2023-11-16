@@ -22,8 +22,4 @@
     <ProjectReference Include="..\External.ThirdParty.Services\External.ThirdParty.Services.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Models\" />
-  </ItemGroup>
-
 </Project>

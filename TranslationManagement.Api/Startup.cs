@@ -40,9 +40,12 @@ namespace TranslationManagement.Api
 
             app.UseRouting();
             app.UseAuthorization();
-            app.UseEndpoints(endpoints =>
+
+            app.UseEndpoints(endpoints =>                       // set up routing properly here
             {
-                endpoints.MapControllers();
+                endpoints.MapControllerRoute(
+                    name: "default",
+                    pattern: "api/{controller}/{action}/{id}");
             });
         }
     }

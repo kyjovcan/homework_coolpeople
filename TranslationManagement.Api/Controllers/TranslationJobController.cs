@@ -8,30 +8,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using TranslationManagement.Api.Controllers;
+using TranslationManagement.Api.Models;
 
 namespace TranslationManagement.Api.Controllers
 {
     [ApiController]
-    [Route("api/jobs/[action]")]
     public class TranslationJobController : ControllerBase
     {
-        public class TranslationJob
-        {
-            public int Id { get; set; }
-            public string CustomerName { get; set; }
-            public string Status { get; set; }
-            public string OriginalContent { get; set; }
-            public string TranslatedContent { get; set; }
-            public double Price { get; set; }
-        }
-
-        static class JobStatuses
-        {
-            internal static readonly string New = "New";
-            internal static readonly string Inprogress = "InProgress";
-            internal static readonly string Completed = "Completed";
-        }
 
         private readonly AppDbContext _context;
         private readonly ILogger<TranslationJobController> _logger;
@@ -42,7 +25,7 @@ namespace TranslationManagement.Api.Controllers
             _logger = logger;
         }
 
-        [HttpGet]
+        [HttpGet("GetJobs")]
         public IActionResult GetJobs()
         {
             var jobs = _context.TranslationJobs.ToArray();
@@ -55,65 +38,72 @@ namespace TranslationManagement.Api.Controllers
             job.Price = job.OriginalContent.Length * PricePerCharacter;
         }
 
-        [HttpPost]
-        public IActionResult CreateJob(TranslationJob job)
+        [HttpPost("CreateJob")]
+        public IActionResult CreateJob([FromBody] TranslationJob job)
         {
-            //job.Status = "New";         why not use existing value
-            job.Status = JobStatuses.New;
-
-            SetPrice(job);
-            _context.TranslationJobs.Add(job);
-
-            bool success = _context.SaveChanges() > 0;
-            if (success)
+            if (!ModelState.IsValid)
             {
-                var notificationSvc = new UnreliableNotificationService();      // this will throw exception sometimes, handle it properly
-
-                bool response = false;
-                do
-                {
-                    try
-                    {
-                        response = notificationSvc.SendNotification("Job created: " + job.Id).Result;
-                    }
-                    catch (Exception ex)
-                    {
-                        continue;
-                    }
-                    
-                } while (!response);            // probably better exception handling
-
-                _logger.LogInformation("New job notification sent");
+                return BadRequest(ModelState);
             }
 
-            return CreatedAtAction(nameof(GetJobs), new { id = job.Id }, job);
+            job.Status = JobStatuses.New;                           //job.Status = "New" - why not use existing value
+            SetPrice(job);
+
+            try
+            {
+                _context.TranslationJobs.Add(job);
+                _context.SaveChanges();                             // dont > 0, whether it works, just continue, if not, return 500
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, e.Message);
+            }
+
+            var notificationSvc = new UnreliableNotificationService();      // this will throw exception sometimes
+            bool response = false;
+            do
+            {
+                try
+                {
+                    response = notificationSvc.SendNotification("Job created: " + job.Id).Result;
+                }
+                catch (Exception ex)
+                {
+                    continue;
+                }
+
+            } while (!response);                                    // probably better exception handling
+
+            _logger.LogInformation("New job notification sent");
+
+
+            return CreatedAtAction(nameof(GetJobs), new { id = job.Id }, job);  // return 201 created 
         }
 
 
-        [HttpPost]
+        [HttpPost("CreateJobWithFile")]
         public IActionResult CreateJobWithFile(IFormFile file, string customer)
         {
-            //var reader = new StreamReader(file.OpenReadStream());       // better create newstreamreader for deadlocks
             string content;
+            string fileExtension = Path.GetExtension(file.FileName)?.ToLower();
 
-            if (file.FileName.EndsWith(".txt"))
+            switch (fileExtension)
             {
-                content = new StreamReader(file.OpenReadStream()).ReadToEnd();
-            }
-            else if (file.FileName.EndsWith(".xml"))
-            {
-                //var xdoc = XDocument.Parse(reader.ReadToEnd());
-                var xdoc = XDocument.Load(file.OpenReadStream());
+                case ".txt":
+                    content = new StreamReader(file.OpenReadStream()).ReadToEnd();
+                    break;
 
-                content = xdoc.Root.Element("Content").Value;
-                customer = xdoc.Root.Element("Customer").Value.Trim();
-            }
-            else
-            {
-                return BadRequest("Unsupported file");  // return action result code, uppercase sentence...
+                case ".xml":
+                    var xdoc = XDocument.Load(file.OpenReadStream());
+                    content = xdoc.Root.Element("Content")?.Value;
+                    customer = xdoc.Root.Element("Customer")?.Value?.Trim();
+                    break;
+                // add more possible file types in the future easily
+                default:
+                    return BadRequest("Unsupported file");              // Return action result code, uppercase sentence...
             }
 
-            var newJob = new TranslationJob()
+            var newJob = new TranslationJob()                           // can now be also created with constructor
             {
                 OriginalContent = content,
                 TranslatedContent = "",
@@ -125,32 +115,38 @@ namespace TranslationManagement.Api.Controllers
             return CreateJob(newJob);
         }
 
-        [HttpPost]
+        [HttpPost("UpdateJobStatus")]
         public IActionResult UpdateJobStatus(int jobId, int translatorId, string newStatus = "")
         {
-            _logger.LogInformation("Job status update request received: " + newStatus + " for job " + jobId.ToString() + " by translator " + translatorId);         // a lot of concating
-                
-            if (typeof(JobStatuses).GetProperties().Count(prop => prop.Name == newStatus) == 0)
+            _logger.LogInformation("Job status update request received: " + newStatus + " for job " + jobId.ToString() + " by translator " + translatorId);                          // a lot of concating
+
+            if (!JobStatuses.IsValidStatus(newStatus))                  // move validation to model
             {
                 return BadRequest("Invalid status");
             }
 
             var job = _context.TranslationJobs.SingleOrDefault(j => j.Id == jobId);
 
-            if (job == null)            // add also check if it is null 
+            if (job == null)                                            // add also check if it is null 
             {
                 return NotFound();
             }
 
-            bool isInvalidStatusChange = (job.Status == JobStatuses.New && newStatus == JobStatuses.Completed) ||
-                                         job.Status == JobStatuses.Completed || newStatus == JobStatuses.New;
-            if (isInvalidStatusChange)
+            if (!JobStatuses.IsValidStatusChange(job, newStatus))       // move validation to model
             {
                 return BadRequest("Invalid status change");
             }
 
             job.Status = newStatus;
-            _context.SaveChanges();
+
+            try
+            {
+                _context.SaveChanges();
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, e.Message);
+            }
 
             return Ok("Updated");
         }
