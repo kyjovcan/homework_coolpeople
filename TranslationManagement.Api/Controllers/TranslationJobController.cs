@@ -13,6 +13,7 @@ using TranslationManagement.Api.Models;
 namespace TranslationManagement.Api.Controllers
 {
     [ApiController]
+    [Route("api/jobs")]
     public class TranslationJobController : ControllerBase
     {
 
@@ -132,12 +133,13 @@ namespace TranslationManagement.Api.Controllers
                 return NotFound();
             }
 
-            if (!JobStatuses.IsValidStatusChange(job, newStatus))       // move validation to model
+            if (JobStatuses.IsInvalidStatusChange(job, newStatus))       // move validation to model
             {
                 return BadRequest("Invalid status change");
             }
 
             job.Status = newStatus;
+            job.TranslatorId = translatorId;
 
             try
             {

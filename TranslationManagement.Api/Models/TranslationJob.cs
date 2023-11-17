@@ -8,10 +8,11 @@
         public string OriginalContent { get; set; }
         public string TranslatedContent { get; set; }
         public double Price { get; set; }
+        public int TranslatorId { get; set; }
 
         public TranslationJob() { }
 
-        public TranslationJob(int id, string customerName, string status, string originalContent, string translatedContent, double price)
+        public TranslationJob(int id, string customerName, string status, string originalContent, string translatedContent, double price, int translatorId)
         {
             Id = id;
             CustomerName = customerName;
@@ -19,6 +20,7 @@
             OriginalContent = originalContent;
             TranslatedContent = translatedContent;
             Price = price;
+            TranslatorId = translatorId;
         }
     }
 }

@@ -59,6 +59,8 @@ namespace TranslationManagement.Api.Migrations
                     b.Property<string>("TranslatedContent")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("TranslatorId");
+
                     b.HasKey("Id");
 
                     b.ToTable("TranslationJobs");

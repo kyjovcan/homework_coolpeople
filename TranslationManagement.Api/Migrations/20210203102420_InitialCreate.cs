@@ -16,7 +16,8 @@ namespace TranslationManagement.Api.Migrations
                     Status = table.Column<string>(type: "TEXT", nullable: true),
                     OriginalContent = table.Column<string>(type: "TEXT", nullable: true),
                     TranslatedContent = table.Column<string>(type: "TEXT", nullable: true),
-                    Price = table.Column<double>(type: "REAL", nullable: false)
+                    Price = table.Column<double>(type: "REAL", nullable: false),
+                    TranslatorId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
                 {

@@ -1,16 +1,22 @@
 import './App.css';
-import JobsTable from './JobsTable'; 
+import JobsTable from './JobsTable';
+import TranslatorsTable from './TranslatorsTable';
 
 
 function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <p>
-          Hello there, here is a list of all the jobs :
-        </p>
-        <div className='jobs-table'>
-          <JobsTable />
+        <div className="container-fluid">
+          <div className="row">
+            <div className="col-md-8">
+              <JobsTable />
+            </div>
+
+            <div className="col-md-4">
+              <TranslatorsTable />
+            </div>
+          </div>
         </div>
       </header>
     </div>
