@@ -122,7 +122,9 @@ const JobsTable = () => {
                       onChange={(e) => handleDropdownChange(e, job.id)}
                     >
                       <option value="">Select Translator</option>
-                      {translators.map(translator => (
+                      {translators
+                      .filter((translator) => translator.status === 'Certified')  // additional point :)
+                      .map(translator => (
                         <option key={translator.id} value={translator.id}>
                           {translator.name}
                         </option>
@@ -150,15 +152,15 @@ const JobsTable = () => {
 
           {isNewJobFormVisible && (
             <div className="mb-4">
-              <label>Customer Name:</label>
+              <label>Customer Name: </label>
               <input
                 type="text"
                 name="customerName"
                 value={newJob.customerName}
                 onChange={handleChange}
                 className="form-control"
-              />
-              <label className="mt-2">Original Content:</label>
+              /><br></br>
+              <label className="mt-2">Original Content: </label>
               <input
                 type="text"
                 name="originalContent"

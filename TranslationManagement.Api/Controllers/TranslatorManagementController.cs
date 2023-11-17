@@ -47,10 +47,15 @@ namespace TranslationManagement.Api.Controllers                         // names
 
             _context.Translators.Add(translator);
 
-            if (_context.SaveChanges() > 0)         // save here
-                return CreatedAtAction(nameof(GetTranslators), new { id = translator.Id }, translator);
-            else
-                return StatusCode(500, "Translator not added due to server error");
+            try
+            {
+                _context.SaveChanges();                 // dont > 0, whether it works, just continue, if not, return 500
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, "Translator not added due to server error - " + e.Message);
+            }
+            return CreatedAtAction(nameof(GetTranslators), new { id = translator.Id }, translator);
         }
 
         [HttpPost("UpdateTranslatorStatus")]

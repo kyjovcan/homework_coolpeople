@@ -36,7 +36,8 @@ namespace TranslationManagement.Api.Controllers
         const double PricePerCharacter = 0.01;
         private void SetPrice(TranslationJob job)
         {
-            job.Price = job.OriginalContent.Length * PricePerCharacter;
+            if (job.OriginalContent != null)
+                job.Price = job.OriginalContent.Length * PricePerCharacter;
         }
 
         [HttpPost("CreateJob")]
@@ -52,6 +53,7 @@ namespace TranslationManagement.Api.Controllers
 
             try
             {
+                var jobs = _context.TranslationJobs.ToArray();
                 _context.TranslationJobs.Add(job);
                 _context.SaveChanges();                             // dont > 0, whether it works, just continue, if not, return 500
             }
@@ -99,7 +101,7 @@ namespace TranslationManagement.Api.Controllers
                     content = xdoc.Root.Element("Content")?.Value;
                     customer = xdoc.Root.Element("Customer")?.Value?.Trim();
                     break;
-                // add more possible file types in the future easily
+                                                                        // add more possible file types in the future easily
                 default:
                     return BadRequest("Unsupported file");              // Return action result code, uppercase sentence...
             }
@@ -119,7 +121,7 @@ namespace TranslationManagement.Api.Controllers
         [HttpPost("UpdateJobStatus")]
         public IActionResult UpdateJobStatus(int jobId, int translatorId, string newStatus = "")
         {
-            _logger.LogInformation("Job status update request received: " + newStatus + " for job " + jobId.ToString() + " by translator " + translatorId);                          // a lot of concating
+            _logger.LogInformation("Job status update request received: " + newStatus + " for job " + jobId.ToString() + " by translator " + translatorId);                                             // a lot of concating
 
             if (!JobStatuses.IsValidStatus(newStatus))                  // move validation to model
             {
