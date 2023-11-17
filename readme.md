@@ -1,43 +1,40 @@
-# Project description
-This app should help us manage translators and jobs they work on. 
-It is currently a working proof of concept but it needs a bit of polishing and a couple of features. 
-It should not take more than a few hours to complete. 
-We prefer to see great quality of code rather than great number of features. Don't worry if you don't find the time to implement everything.
-No backwards compatibility required, feel free to adjust the project in any way or use any library you wish.
+	Hello there, i would like to first apologize for taking longer to send the results, at first i thought this should be some problem to see IF i can code, but after i started to work on this i found out this is just to see HOW i can code, immediately after opening the codes i started to notice a lot of small problems, details, bugs that didnt make sense or were a bit pain to look at, here is just main parts i improved, changed or added. 
+	
+	I used Visual Studio 2022, project is just running on IIS Express, plus i added a simple React app which i enjoyed working on, i guess you will have React installed (if not, install node, npm, npm install) and in the client app folder just "npm start" to get it running on localhost:3000, backend is running automaticaly with swagger. For tests, just open Test Explorer and run them, i created just the most crucial ones for Job controller, as you mentioned not to create everything, i focused just on main methods. This all took me probably ~10-12 hours to make, 2 evenings after work and few hours today, hope it is enough for a quick show, we can talk about further upgrades on the call. 
 
-# Requirements - API 
-We do expect this app to grow in the future and your design choices should reflect that.
+	Quick list of updates: 
+- changed the architecture a bit, moved functionality to separate folders
+- improved readability 
+	- naming convention weird 
+	- fix notation, upper/lowercase names 
+	- general code cleanup, formatting
+- improved extendability - simple changes like switching from if...else to switch of file types - easier to maintain and extend 
+- added dependency injections for logging and context to simplify creation of them
+- added cors, proper routing for http requests
 
-Your tasks are following (ordered by importance): 
-
-- **Refactor the code so it is of production quality**
-> * DO try to outline what you would consider a good architecture
-> * DO consider adding folders, projects, interfaces, design patterns, whatever you see fit
-> * we'd love to see code that is easy to read, extend and maintain
-> * maybe next feature request will be to support creating jobs by more file types or assigning jobs via messaging
-
-- **RESTful api design** 
-
-- **Cover with tests**
-> - DO NOT worry about code coverage, we want to see *how* you write tests, not that you can write many
-> - DO cover the important parts first
-
-- **Implement additional features [optional, for additional points]**
-> - business rule: "only Certified translators can work on jobs"
-> - implement endpoints that will allow to track (set and get) which translator works on what job
-
-# Requirements - front end (if that is also your domain)
-Create a super simple frontend. We would like to see a few components, a bit of data manipulation and a small state management. 
-Our tools of choice are React (CRA) + Typescript but use what you prefer
-- DO NOT bother with styling, the uglier the better
-- DO NOT implement full functionality of the backend, pick a small part of the functionality
-- maybe just allow to manage translators or visualize the job state
-
-# Do not worry about
-- all parts that are common functionality: https, authorization, logging, database location...
-- implementing everything perfectly, rather do smaller scope well and we can discuss the rest in person
-
-# Deliverables
-Clone/fork to your repo and deliver as a link to your repo or share the `git-archive`. 
-Commit to master, follow usual git culture. 
-Please include a note regarding how to run.
+- controllers mistakes / upgrades
+	- switch from just returning "something" to returning Action Results instead - 201 Created / 404 not found / 500 bad request...
+	- validate model (TranslatorModel) using FromBody attributes
+	- change argument exceptions to action results - bad requests 
+	- change "Single" function on top of DBresults to "SingleOrDefault", there might be null result
+	- error and null handling
+	- statutes.All provides the same functionality as statutes.where.... ==0
+	- document load provides parsing we need already
+	- redundant usage of strings instead of variables - changed
+	- dont compare saveChanges > 0 to see if Save worked, catch exception
+	- unreliable notification service proper handling
+	- moved jobs and translators to own separate models, with constructors and basic functionality
+	- namespace was mismatched - Controllers vs Controlers
+	- didnt touch logging, but would simplify and update a bit 
+	- searching for job in translators fixed
+	- 
+- added frontend - simple react app with one page, shows table with Jobs and Translators
+	- added functionality to add new Job/Translator 
+	- for Jobs added dropdown menu to choose the Translator, change status for the Job 
+		- added to show work with States
+		- also for additional point - only can assign Cetrified translators 
+		- also updated Job model, so that every job has info about its translator assigned 
+	- styled it just a bit with bootstrap, implemented just part of functionality as you wished
+- didnt touch database, logging, security, auth, but that would be some next steps to work on, also another thing i miss is delete functionality for jobs and translators, i would add this as next step
+- another next step - move data related functionality to Services folder, to have it separated from controllers, currently it is very easy - _context.SaveChanges() - but in the future those CRUD functions can be bigger, harder, would be better to have them separated from main logic
+- added tests just for creating and updating of jobs, to show really simple testing scenarious for some of the action results from controllers, every test is passable with green tick for me
